@@ -63,8 +63,12 @@ function AppContent() {
         setAuthStatus('unauthenticated');
         return;
       }
-      const { data } = await supabase.rpc('ensure_user_profile');
-      setAuthStatus(data?.is_active === false ? 'pending' : 'active');
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_active')
+        .eq('id', user.id)
+        .maybeSingle();
+      setAuthStatus(profile?.is_active === true ? 'active' : 'pending');
     };
 
     checkProfile();
