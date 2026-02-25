@@ -1,13 +1,4 @@
--- Teil 1: Fehlenden User "Max Mustermann" manuell einfügen
-INSERT INTO public.profiles (id, vorname, nachname, is_active)
-VALUES ('f4556eed-6e68-4840-b1f2-e773f792680f', 'Max', 'Mustermann', true)
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO public.user_roles (user_id, role)
-VALUES ('f4556eed-6e68-4840-b1f2-e773f792680f', 'mitarbeiter')
-ON CONFLICT (user_id, role) DO NOTHING;
-
--- Teil 2: Funktion für automatische Profil-Erstellung bei erstem Login
+-- Funktion für automatische Profil-Erstellung bei erstem Login
 CREATE OR REPLACE FUNCTION public.ensure_user_profile()
 RETURNS json
 LANGUAGE plpgsql
