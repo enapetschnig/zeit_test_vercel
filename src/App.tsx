@@ -54,16 +54,54 @@ function AppContent() {
     handleInstallDialogClose,
   } = useOnboarding();
 
-  // Ensure user profile exists (for users created via Cloud dashboard)
+  const [authStatus, setAuthStatus] = useState<'checking' | 'pending' | 'active' | 'unauthenticated'>('checking');
+
   useEffect(() => {
-    const ensureProfile = async () => {
+    const checkProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.rpc('ensure_user_profile');
+      if (!user) {
+        setAuthStatus('unauthenticated');
+        return;
       }
+      const { data } = await supabase.rpc('ensure_user_profile');
+      setAuthStatus(data?.is_active === false ? 'pending' : 'active');
     };
-    ensureProfile();
+
+    checkProfile();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setAuthStatus('unauthenticated');
+      } else {
+        checkProfile();
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  if (authStatus === 'checking') return null;
+
+  if (authStatus === 'pending') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-background">
+        <div className="max-w-md space-y-4">
+          <div className="text-5xl">⏳</div>
+          <h1 className="text-2xl font-bold">Account wartet auf Freigabe</h1>
+          <p className="text-muted-foreground">
+            Deine Registrierung war erfolgreich. Der Administrator muss deinen Account noch freischalten.
+            Bitte warte auf die Bestätigung.
+          </p>
+          <button
+            className="mt-4 underline text-sm text-muted-foreground"
+            onClick={() => supabase.auth.signOut()}
+          >
+            Abmelden
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
