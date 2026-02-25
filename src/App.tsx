@@ -1,13 +1,14 @@
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { InstallPromptDialog } from "./components/InstallPromptDialog";
 import { useOnboarding } from "./contexts/OnboardingContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import TimeTracking from "./pages/TimeTracking";
@@ -29,6 +30,24 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) return null; // still loading
+  if (!session) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+}
+
 function AppContent() {
   const {
     showInstallDialog,
@@ -49,23 +68,23 @@ function AppContent() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/time-tracking" element={<TimeTracking />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/:projectId" element={<ProjectOverview />} />
-        <Route path="/projects/:projectId/:type" element={<ProjectDetail />} />
-        <Route path="/projects/:projectId/materials" element={<MaterialList />} />
-        <Route path="/my-hours" element={<MyHours />} />
-        <Route path="/my-documents" element={<MyDocuments />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/construction-sites" element={<ConstructionSites />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/hours-report" element={<HoursReport />} />
-        <Route path="/employees" element={<Employees />} />
-        <Route path="/notepad" element={<Notepad />} />
-        <Route path="/disturbances" element={<Disturbances />} />
-        <Route path="/disturbances/:id" element={<DisturbanceDetail />} />
+        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/time-tracking" element={<ProtectedRoute><TimeTracking /></ProtectedRoute>} />
+        <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+        <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectOverview /></ProtectedRoute>} />
+        <Route path="/projects/:projectId/:type" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+        <Route path="/projects/:projectId/materials" element={<ProtectedRoute><MaterialList /></ProtectedRoute>} />
+        <Route path="/my-hours" element={<ProtectedRoute><MyHours /></ProtectedRoute>} />
+        <Route path="/my-documents" element={<ProtectedRoute><MyDocuments /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/construction-sites" element={<ProtectedRoute><ConstructionSites /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+        <Route path="/hours-report" element={<ProtectedRoute><HoursReport /></ProtectedRoute>} />
+        <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
+        <Route path="/notepad" element={<ProtectedRoute><Notepad /></ProtectedRoute>} />
+        <Route path="/disturbances" element={<ProtectedRoute><Disturbances /></ProtectedRoute>} />
+        <Route path="/disturbances/:id" element={<ProtectedRoute><DisturbanceDetail /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
 

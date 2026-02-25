@@ -11,7 +11,7 @@ const supabaseAdmin = createClient(
 );
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://zeit-test-vercel.vercel.app",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
@@ -114,7 +114,7 @@ async function generatePDF(data: ReportRequest & { technicians: string[] }, phot
   // Try loading logo from public URL
   let logoLoaded = false;
   try {
-    const logoResponse = await fetch("https://testepower.lovable.app/epower-logo.png");
+    const logoResponse = await fetch("https://zeit-test-vercel.vercel.app/epower-logo.png");
     if (logoResponse.ok) {
       const logoBuffer = await logoResponse.arrayBuffer();
       const logoUint8 = new Uint8Array(logoBuffer);

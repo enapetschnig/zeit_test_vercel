@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.79.0';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://zeit-test-vercel.vercel.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     }
 
     // Generate registration link
-    const appUrl = 'https://elektro-brodnig.app';
+    const appUrl = 'https://zeit-test-vercel.vercel.app';
     const registrationLink = `${appUrl}/auth`;
     
     // Compose SMS message
