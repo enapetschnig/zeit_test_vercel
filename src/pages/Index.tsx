@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, FolderKanban, Users, BarChart3, LogOut, FileText, Camera, ArrowRight, Info, User as UserIcon, Zap, Receipt } from "lucide-react";
+import { Clock, FolderKanban, Users, BarChart3, LogOut, FileText, Camera, ArrowRight, Info, User as UserIcon, Zap, Receipt, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import {
@@ -48,6 +48,7 @@ export default function Index() {
   const [recentEntries, setRecentEntries] = useState<RecentTimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
+  const [pendingActivations, setPendingActivations] = useState<number>(0);
   const { handleRestartInstallGuide } = useOnboarding();
 
   const fetchProjects = async () => {
@@ -115,10 +116,22 @@ export default function Index() {
     const role = roleData?.role ?? null;
     setUserRole(role);
 
-    await Promise.all([
+    const tasks: Promise<void>[] = [
       fetchProjects(),
       fetchRecentEntries(userId, role),
-    ]);
+    ];
+
+    if (role === 'administrator') {
+      tasks.push(
+        supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', false)
+          .then(({ count }) => { setPendingActivations(count ?? 0); })
+      );
+    }
+
+    await Promise.all(tasks);
 
     setLoading(false);
   };
@@ -284,6 +297,27 @@ export default function Index() {
               : "Zeiterfassung und Projektdokumentation"}
           </p>
         </div>
+
+        {/* Pending Activations Banner (Admin only) */}
+        {isAdmin && pendingActivations > 0 && (
+          <div
+            className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 cursor-pointer hover:bg-amber-100 transition-colors"
+            onClick={() => navigate('/admin')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200">
+                <AlertCircle className="h-5 w-5 text-amber-700" />
+              </div>
+              <div>
+                <p className="font-semibold text-amber-900">
+                  {pendingActivations} {pendingActivations === 1 ? 'Account wartet' : 'Accounts warten'} auf Freigabe
+                </p>
+                <p className="text-sm text-amber-700">Im Admin-Bereich freischalten</p>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 shrink-0 text-amber-700" />
+          </div>
+        )}
 
         {/* Main Actions Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
